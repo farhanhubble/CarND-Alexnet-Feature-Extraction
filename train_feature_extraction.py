@@ -3,17 +3,40 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from alexnet import AlexNet
+from keras.datasets import cifar10
+import os
 
-# TODO: Load traffic signs data.
-with open('train.p',mode='rb') as f:
-    train = pickle.load(f)
+#dataset = 'cifar' 
+dataset = 'roadsign'
 
-X = train['features']
-y = train['labels']
-
+if dataset == 'roadsign':
+    # TODO: Load traffic signs data.
+    with open('train.p',mode='rb') as f:
+        train = pickle.load(f)
+    X = train['features']
+    y = train['labels']
+    
+    with open('test.p',mode='rb') as f:
+        test = pickle.load(f)
+    X_test = test['features']
+    y_test = test['labels']
+    
+    n_classes = 43
+    
+  
+elif dataset == 'cifar':
+    (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+    # y_train.shape is 2d, (50000, 1). While Keras is smart enough to handle this
+    # it's a good idea to flatten the array.
+    y_train = y_train.reshape(-1)
+    y_test = y_test.reshape(-1)
+    
+    n_classes = 10
+    
 # TODO: Split data into training and validation sets.
-n_classes = 43
 (X_train,X_valid, y_train,y_valid) = train_test_split(X,y,train_size=0.7,random_state=0)
+
+
 
 # TODO: Define placeholders and resize operation.
 images = tf.placeholder(tf.float32,[None,32,32,3])
@@ -69,24 +92,43 @@ def evaluate(sessn,X,y):
 
 # Run training.
 n_epoch = 10
+force_train = False
+
 with tf.Session() as s:
-    s.run(initialization)
     
-    for e in range(n_epoch):
-        X_train,y_train = shuffle(X_train, y_train)
+    if force_train == True or (not os.path.isfile(dataset+'/'+dataset+'.meta')):
+        s.run(initialization)
         
-        n_examples = X_train.shape[0]
+        for e in range(n_epoch):
+            X_train,y_train = shuffle(X_train, y_train)
+
+
+            n_examples = X_train.shape[0]
+
+
+            for offset in range(0,n_examples,batch_sz):
+                X_batch = X_train[offset:offset+batch_sz]
+                y_batch = y_train[offset:offset+batch_sz]
+
+
+                s.run(optimization,feed_dict={images:X_batch, labels:y_batch})
+
+
+            train_accuracy = evaluate(s,X_train,y_train)
+            validation_accuracy = evaluate(s,X_valid,y_valid)
+
+
+            print("Epochs {}, Training accuracy {:.3f}, Validation accuracy {:.3f}".format(e+1,train_accuracy,validation_accuracy))
+                             
+        print("Test accuracy:",evaluate(s,X_test,y_test))
         
-        for offset in range(0,n_examples,batch_sz):
-            X_batch = X_train[offset:offset+batch_sz]
-            y_batch = y_train[offset:offset+batch_sz]
-            
-            s.run(optimization,feed_dict={images:X_batch, labels:y_batch})
-            
-        train_accuracy = evaluate(s,X_train,y_train)
-        validation_accuracy = evaluate(s,X_valid,y_valid)
+        if not os.path.isdir(dataset):
+            os.makedirs(dataset)
         
-        print("Epochs {}, Training accuracy {:.3f}, Validation accuracy {:.3f}".format(e+1,train_accuracy,validation_accuracy))
+        saver = tf.train.Saver()
+        saver.save(s,dataset+'/'+dataset)
     
-    
-    
+    else:
+        saver = tf.train.Saver()
+        saver.restore(s,tf.train.latest_checkpoint(dataset) )
+        print("Test accuracy:",evaluate(s,X_test,y_test))
