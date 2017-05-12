@@ -30,7 +30,7 @@ fc7 = tf.stop_gradient(fc7)
 
 # TODO: Add the final layer for traffic sign classification.
 shape = (fc7.get_shape().as_list()[-1],n_classes)
-fc8W  = tf.Variable(tf.truncated_normal(shape, dtype=tf.float32))
+fc8W  = tf.Variable(tf.truncated_normal(shape,0,0.1, dtype=tf.float32))
 fc8b  = tf.Variable(tf.zeros([n_classes], dtype=tf.float32))
 
 # TODO: Define loss, training, accuracy operations.
@@ -56,19 +56,19 @@ batch_sz = 64
 def evaluate(sessn,X,y):
     n_examples = X.shape[0]
     
-    accuracy = 0
+    net_accuracy = 0
     
     for offset in range(0,n_examples,batch_sz):
         X_batch = X[offset:offset+batch_sz]
         y_batch = y[offset:offset+batch_sz]
         
         batch_accuracy = sessn.run(accuracy,feed_dict={images:X_batch,labels:y_batch})
-        accuracy += batch_accuracy * batch_sz
+        net_accuracy += batch_accuracy * batch_sz
         
-    return accuracy / n_examples
+    return net_accuracy / n_examples
 
 # Run training.
-n_epoch = 20
+n_epoch = 10
 with tf.Session() as s:
     s.run(initialization)
     
@@ -86,7 +86,7 @@ with tf.Session() as s:
         train_accuracy = evaluate(s,X_train,y_train)
         validation_accuracy = evaluate(s,X_valid,y_valid)
         
-        print("Epochs {}, Training accuracy {:.3f}, Validation accuracy {:.3f}".format(train_accuracy,validation_accuracy))
+        print("Epochs {}, Training accuracy {:.3f}, Validation accuracy {:.3f}".format(e+1,train_accuracy,validation_accuracy))
     
     
     
