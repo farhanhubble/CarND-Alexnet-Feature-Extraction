@@ -9,6 +9,7 @@ sign_names = pd.read_csv('signnames.csv')
 nb_classes = 43
 
 x = tf.placeholder(tf.float32, (None, 32, 32, 3))
+y = tf.placeholder(tf.int8,[None])
 resized = tf.image.resize_images(x, (227, 227))
 
 # NOTE: By setting `feature_extract` to `True` we return
@@ -19,7 +20,23 @@ fc7 = AlexNet(resized, feature_extract=True)
 # HINT: Look at the final layer definition in alexnet.py to get an idea of what this
 # should look like.
 shape = (fc7.get_shape().as_list()[-1], nb_classes)  # use this shape for the weight matrix
-probs = ...
+
+# Define custom fuly connected layer for our application.
+fc8W  = tf.Variable(tf.truncated_normal(list(shape),0,0.1))
+fc8b  = tf.Variable(tf.zeros([nb_classes]))
+
+# Define softmax output layer.
+logits = tf.nn.bias_add(tf.matmul(fc7,fc8W),fc8b)
+probs = tf.nn.softmax(logits)
+
+# Define loss funtion
+one_hot_y = tf.one_hot(y,n_classes,on_value=1,off_value=0)
+cross_entropy = sparse_softmax_cross_entropy_with_logits(logits,one_hot_y)
+training_loss = tf.reduce_mean(cross_entropy)
+
+# Optimizer
+optimizer = tf.train.AdamOptimizer()
+optimization = optimizer.minimize(cross_entropy,var_list=[fc8W,fc8b])
 
 init = tf.global_variables_initializer()
 sess = tf.Session()
