@@ -6,8 +6,8 @@ from alexnet import AlexNet
 from keras.datasets import cifar10
 import os
 
-#dataset = 'cifar' 
-dataset = 'roadsign'
+dataset = 'cifar' 
+#dataset = 'roadsign'
 
 if dataset == 'roadsign':
     # TODO: Load traffic signs data.
@@ -21,6 +21,9 @@ if dataset == 'roadsign':
     X_test = test['features']
     y_test = test['labels']
     
+    # TODO: Split data into training and validation sets.
+    (X_train,X_valid, y_train,y_valid) = train_test_split(X,y,train_size=0.7,random_state=0)
+    
     n_classes = 43
     
   
@@ -31,10 +34,12 @@ elif dataset == 'cifar':
     y_train = y_train.reshape(-1)
     y_test = y_test.reshape(-1)
     
+    # TODO: Split data into training and validation sets.
+    (X_train,X_valid, y_train,y_valid) = train_test_split(X_train,y_train,train_size=0.7,random_state=0)
+    
     n_classes = 10
     
-# TODO: Split data into training and validation sets.
-(X_train,X_valid, y_train,y_valid) = train_test_split(X,y,train_size=0.7,random_state=0)
+
 
 
 
